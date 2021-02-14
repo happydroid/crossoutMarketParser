@@ -1,7 +1,21 @@
 package calc;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import db.ItemDb;
+import db.ItemLoader;
+import db.MongoConfig;
 import main.Config;
-import main.SkipSslVerificationHttpRequestFactory;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import parser.SkipSslVerificationHttpRequestFactory;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Component
+@Configuration
+@EnableScheduling
+@Import({MongoConfig.class})
 public class ExtremumService {
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
     private static Random random = new Random();
@@ -27,9 +43,12 @@ public class ExtremumService {
     private volatile static AtomicInteger currentItems = new AtomicInteger();
     private static int maxItems = 0;
     private static Map<Integer, String> itemIdToName;
-
     private CraftService craftService = new CraftService();
 
+    @Autowired
+    private ItemLoader itemLoader;
+
+    @Scheduled(fixedRate = 1000000000)
     public void readAndCalcData() {
         Map<String, Double> ratioToName = new ConcurrentHashMap<>();
         itemIdToName = craftService.getIdAndNames();
@@ -46,6 +65,11 @@ public class ExtremumService {
                             System.out.println(itemIdToName.get(itemId) + " " + aDouble);
                             ratioToName.put(itemIdToName.get(itemId), aDouble);
 
+                            ItemDb itemDb = new ItemDb();
+                            itemDb.setId(itemId);
+                            itemDb.setName(itemIdToName.get(itemId));
+                            itemDb.setRatio(aDouble);
+                            itemLoader.write(itemDb);
                         });
                     }
                 });
@@ -115,8 +139,6 @@ public class ExtremumService {
     }
 
     public static void main(String[] args) {
-        //new AnnotationConfigApplicationContext(ExtremumService.class);
-        new AnnotationConfigApplicationContext(Config.class);
-        new ExtremumService().readAndCalcData();
+        new AnnotationConfigApplicationContext(ExtremumService.class);
     }
 }

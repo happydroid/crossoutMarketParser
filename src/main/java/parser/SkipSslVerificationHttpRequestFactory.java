@@ -1,4 +1,4 @@
-package main;
+package parser;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;

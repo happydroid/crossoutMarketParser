@@ -1,12 +1,11 @@
 package calc;
 
 import main.RarityEnum;
-import main.SkipSslVerificationHttpRequestFactory;
+import parser.SkipSslVerificationHttpRequestFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import parser.Item;
 import parser.ItemParser;
