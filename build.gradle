@@ -15,7 +15,7 @@ apply plugin: 'io.spring.dependency-management'
 
 bootJar {
     baseName = 'gs-rest-service'
-    version =  '0.1.0'
+    version = '0.1.0'
 }
 
 repositories {
@@ -27,7 +27,7 @@ targetCompatibility = 1.8
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web")
-    compile ('org.apache.httpcomponents:httpclient:4.5.8')
+    compile('org.apache.httpcomponents:httpclient:4.5.8')
     compile 'org.apache.commons:commons-math3:3.0'
 
     testCompile('org.springframework.boot:spring-boot-starter-test')

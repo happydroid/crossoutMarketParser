@@ -1,27 +1,19 @@
 package calc;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import db.ItemDb;
 import db.ItemLoader;
 import db.MongoConfig;
-import main.Config;
-import org.bson.Document;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import parser.SkipSslVerificationHttpRequestFactory;
-import org.apache.commons.math3.stat.descriptive.rank.Median;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import parser.Price;
+import parser.SkipSslVerificationHttpRequestFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

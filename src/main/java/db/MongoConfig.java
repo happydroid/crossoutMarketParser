@@ -9,7 +9,6 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration;
 
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
