@@ -18,10 +18,10 @@ import parser.SkipSslVerificationHttpRequestFactory;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,37 +32,56 @@ public class ExtremumService {
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
     private static final Random random = new Random();
 
-    private volatile static AtomicInteger currentItems = new AtomicInteger();
-    private static int maxItems = 0;
-    private static Map<Integer, String> itemIdToName;
     private CraftService craftService = new CraftService();
     private List<ItemDb> allItems = new CopyOnWriteArrayList<>();
+    private Map<Integer, String> idToNameAllItems;
 
     @Autowired
     private ItemLoader itemLoader;
 
-    //@Scheduled(fixedRate = 1000000000)
-    public void startParseSite() {
-        itemIdToName = craftService.getIdAndNames();
-        maxItems = itemIdToName.size();
-
-        ExecutorService exec = Executors.newFixedThreadPool(2);
-        try {
-            for (Integer itemId : itemIdToName.keySet()) {
-                //todo parse only items, that hasnt in db
-                exec.submit(() -> {
-                    ItemDb itemDb = parseFromSite(itemId);
-                    itemLoader.write(itemDb);
-                });
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            exec.shutdown();
+    @Scheduled(fixedRate = 1000000000)
+    public void complexLoadMain() {
+        //load and calc on actual data
+        List<ItemDb> itemsFromDb = loadActualItemsFromDb();
+        if (itemsFromDb.isEmpty()) {
+            System.err.println("No actual data");
+        } else {
+            calcRatioAndPrint(itemsFromDb);
         }
+
+        //refresh deprecated items
+        idToNameAllItems = craftService.getAllIdAndNames();
+        System.err.println("Actual items: " + itemsFromDb.size());
+        System.err.println("All items: " + idToNameAllItems.size());
+
+        Set<Integer> actualIdSet = itemsFromDb.stream().map(ItemDb::getId).collect(Collectors.toSet());
+        List<Integer> itToParse = idToNameAllItems.keySet().stream().filter(idItem -> !actualIdSet.contains(idItem)).collect(Collectors.toList());
+
+        startParseSite(itToParse);
+
+        //all data
+        calcRatioAndPrint(loadActualItemsFromDb());
+        System.exit(0);
     }
 
-    /*private List<ItemDb> loadDataFromDb() {
+    private void startParseSite(List<Integer> idList) {
+        ExecutorService exec = Executors.newFixedThreadPool(2);
+        List<Runnable> tasks = new ArrayList<>();
+        for (Integer itemId : idList) {
+            tasks.add(() -> {
+                ItemDb itemDb = parseFromSite(itemId);
+                itemLoader.write(itemDb);
+            });
+        }
+
+        CompletableFuture<?>[] futures = tasks.stream()
+                .map(task -> CompletableFuture.runAsync(task, exec))
+                .toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures).join();
+        exec.shutdown();
+    }
+
+    private List<ItemDb> loadActualItemsFromDb() {
         LocalDateTime now = LocalDateTime.now();
         List<ItemDb> itemDbs = new ArrayList<>();
         for (ItemDb itemDb : itemLoader.getAll().find()) {
@@ -71,17 +90,15 @@ public class ExtremumService {
             }
         }
         return itemDbs;
-    }*/
+    }
 
-    @Scheduled(fixedRate = 1000000000)
-    public void loadDataFromDb() {
+    private void calcRatioAndPrint(List<ItemDb> itemDbs) {
         Map<Double, String> ratioToName = new HashMap<>();
-
-        for (ItemDb itemDb : itemLoader.getAll().find()) {
+        for (ItemDb itemDb : itemDbs) {
             Median median = new Median();
             List<Double> doubles = itemDb.getSellValues().stream().map(Price::getValue).collect(Collectors.toList());
 
-            double valueMax = median.evaluate(doubles.stream().mapToDouble(i -> i).toArray(), 90);
+            double valueMax = median.evaluate(doubles.stream().mapToDouble(i -> i).toArray(), 95);
             double valueNow = (doubles.get(0)
                     + doubles.get(1)
                     + doubles.get(2)
@@ -91,11 +108,8 @@ public class ExtremumService {
                 ratioToName.put(valueNow / valueMax, itemDb.getName());
             }
         }
-
         Stream<Map.Entry<Double, String>> sorted = ratioToName.entrySet().stream().sorted(Map.Entry.comparingByKey());
         sorted.forEach(pair -> System.out.println(pair.getKey() + " " + pair.getValue()));
-
-        System.exit(0);
     }
 
     private ItemDb parseFromSite(Integer itemId) {
@@ -126,7 +140,7 @@ public class ExtremumService {
 
         ItemDb itemDb = new ItemDb();
         itemDb.setId(itemId);
-        itemDb.setName(itemIdToName.get(itemId));
+        itemDb.setName(idToNameAllItems.get(itemId));
         itemDb.setSellValues(
                 Arrays.stream(objects)
                         .map(list -> {

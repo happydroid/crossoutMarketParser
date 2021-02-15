@@ -95,7 +95,7 @@ public class CraftService {
         }
     }
 
-    public Map<Integer, String> getIdAndNames() {
+    public Map<Integer, String> getAllIdAndNames() {
         List<Item> itemList = parseFromSite();
         return itemList.stream().collect(Collectors.toMap(Item::getId, Item::getName));
     }
@@ -111,7 +111,10 @@ public class CraftService {
         return itemList.stream()
                 .filter(a -> a.buyOrders != 0)
                 .filter(a -> RarityEnum.Rare.toString().equals(a.rarityName)
-                        || RarityEnum.Epic.toString().equals(a.rarityName))
+                        || RarityEnum.Epic.toString().equals(a.rarityName)
+                        || RarityEnum.Special.toString().equals(a.rarityName)
+                        || RarityEnum.Legendary.toString().equals(a.rarityName)
+                )
                 .filter(a -> CategoryEnum.Weapons.toString().equals(a.categoryName)
                         || CategoryEnum.Cabins.toString().equals(a.categoryName)
                         || CategoryEnum.Hardware.toString().equals(a.categoryName)

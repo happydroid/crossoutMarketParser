@@ -3,6 +3,7 @@ package main;
 public enum RarityEnum {
     Common("Common"),
     Rare("Rare"),
+    Special("Special"),
     Epic("Epic"),
     Legendary("Legendary"),
     Relic("Relic");
