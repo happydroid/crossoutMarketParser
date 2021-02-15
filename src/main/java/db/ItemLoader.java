@@ -21,7 +21,11 @@ public class ItemLoader {
     }
 
     public void write(ItemDb itemDb) {
-        getAll().insertOne(itemDb);
+        try {
+            getAll().insertOne(itemDb);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     public ItemDb findOne(long id) {

@@ -2,7 +2,11 @@ package db;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.math3.util.Pair;
+import parser.Price;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -18,7 +22,10 @@ public class ItemDb {
     private Double ratio;
 
     @JsonProperty("sellValues")
-    public List<Double> sellValues;
+    public List<Price> sellValues;
+
+    @JsonProperty("timeRecord")
+    public LocalDateTime timeRecord;
 
     public Integer getId() {
         return id;
@@ -44,11 +51,19 @@ public class ItemDb {
         this.ratio = ratio;
     }
 
-    public List<Double> getSellValues() {
+    public List<Price> getSellValues() {
         return sellValues;
     }
 
-    public void setSellValues(List<Double> sellValues) {
+    public void setSellValues(List<Price> sellValues) {
         this.sellValues = sellValues;
+    }
+
+    public LocalDateTime getTimeRecord() {
+        return timeRecord;
+    }
+
+    public void setTimeRecord(LocalDateTime timeRecord) {
+        this.timeRecord = timeRecord;
     }
 }

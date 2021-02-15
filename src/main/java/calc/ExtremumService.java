@@ -18,7 +18,7 @@ import parser.SkipSslVerificationHttpRequestFactory;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,51 +30,75 @@ import java.util.stream.Stream;
 @Import({MongoConfig.class})
 public class ExtremumService {
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
-    private static Random random = new Random();
+    private static final Random random = new Random();
 
     private volatile static AtomicInteger currentItems = new AtomicInteger();
     private static int maxItems = 0;
     private static Map<Integer, String> itemIdToName;
     private CraftService craftService = new CraftService();
+    private List<ItemDb> allItems = new CopyOnWriteArrayList<>();
 
     @Autowired
     private ItemLoader itemLoader;
 
-    @Scheduled(fixedRate = 1000000000)
-    public void readAndCalcData() {
-        Map<String, Double> ratioToName = new ConcurrentHashMap<>();
+    //@Scheduled(fixedRate = 1000000000)
+    public void startParseSite() {
         itemIdToName = craftService.getIdAndNames();
         maxItems = itemIdToName.size();
 
         ExecutorService exec = Executors.newFixedThreadPool(2);
         try {
             for (Integer itemId : itemIdToName.keySet()) {
-                exec.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        Optional<Double> optionalDouble = makeWork(itemId);
-                        optionalDouble.ifPresent(aDouble -> {
-                            System.out.println(itemIdToName.get(itemId) + " " + aDouble);
-                            ratioToName.put(itemIdToName.get(itemId), aDouble);
-
-                            ItemDb itemDb = new ItemDb();
-                            itemDb.setId(itemId);
-                            itemDb.setName(itemIdToName.get(itemId));
-                            itemDb.setRatio(aDouble);
-                            itemLoader.write(itemDb);
-                        });
-                    }
+                //todo parse only items, that hasnt in db
+                exec.submit(() -> {
+                    ItemDb itemDb = parseFromSite(itemId);
+                    itemLoader.write(itemDb);
                 });
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             exec.shutdown();
         }
-
-        Stream<Map.Entry<String, Double>> sorted = ratioToName.entrySet().stream().sorted(Map.Entry.comparingByValue());
-        sorted.forEach(name -> System.out.println(name + " " + ratioToName.get(name)));
     }
 
-    private Optional<Double> makeWork(Integer itemId) {
+    /*private List<ItemDb> loadDataFromDb() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ItemDb> itemDbs = new ArrayList<>();
+        for (ItemDb itemDb : itemLoader.getAll().find()) {
+            if (itemDb.getTimeRecord().plusDays(2).isAfter(now)) {
+                itemDbs.add(itemDb);
+            }
+        }
+        return itemDbs;
+    }*/
+
+    @Scheduled(fixedRate = 1000000000)
+    public void loadDataFromDb() {
+        Map<Double, String> ratioToName = new HashMap<>();
+
+        for (ItemDb itemDb : itemLoader.getAll().find()) {
+            Median median = new Median();
+            List<Double> doubles = itemDb.getSellValues().stream().map(Price::getValue).collect(Collectors.toList());
+
+            double valueMax = median.evaluate(doubles.stream().mapToDouble(i -> i).toArray(), 90);
+            double valueNow = (doubles.get(0)
+                    + doubles.get(1)
+                    + doubles.get(2)
+                    + doubles.get(3)
+                    + doubles.get(4)) / 5.0;
+            if (valueMax < valueNow) {
+                ratioToName.put(valueNow / valueMax, itemDb.getName());
+            }
+        }
+
+        Stream<Map.Entry<Double, String>> sorted = ratioToName.entrySet().stream().sorted(Map.Entry.comparingByKey());
+        sorted.forEach(pair -> System.out.println(pair.getKey() + " " + pair.getValue()));
+
+        System.exit(0);
+    }
+
+    private ItemDb parseFromSite(Integer itemId) {
         try {
             Thread.sleep((long) (random.nextFloat() * 200) + 200);
         } catch (Exception e) {
@@ -92,42 +116,27 @@ public class ExtremumService {
             objects = responseEntity.getBody();
             if (!responseEntity.getStatusCode().is2xxSuccessful()) {
                 System.err.println("Try load data again for id = " + itemId);
-                return makeWork(itemId);
+                return parseFromSite(itemId);
             }
         } catch (Exception e) {
             //e.printStackTrace();
             System.err.println("Try load data again for id = " + itemId);
-            return makeWork(itemId);
+            return parseFromSite(itemId);
         }
 
-        List<Double> doubles = new ArrayList<>();
-        List<Price> prices = Arrays.stream(objects)
-                .map(list -> {
-                    String time = (String) list.get(0);
-                    Integer value = (Integer) list.get(1);
-                    doubles.add(value / 100.0);
-                    return new Price(value / 100.0, LocalDateTime.parse(time, dtf));
-                }).collect(Collectors.toList());
-
-        Median median = new Median();
-        double valueMax = median.evaluate(doubles.stream().mapToDouble(i -> i).toArray(), 95);
-
-        double valueNow = (doubles.get(doubles.size() - 1));
-
-        /*double valueNow = (doubles.get(doubles.size() - 1)
-                + doubles.get(doubles.size() - 2)
-                + doubles.get(doubles.size() - 3)
-                + doubles.get(doubles.size() - 4)
-                + doubles.get(doubles.size() - 5)) / 5.0;*/
-
-        System.out.println(itemIdToName.get(itemId) + " valueNow " + valueNow + " valueMax " + valueMax);
-        System.out.println(currentItems.incrementAndGet() / maxItems * 1.0 + "%");
-
-        if (valueMax < valueNow) {
-            return Optional.of(valueNow / valueMax);
-        }
-
-        return Optional.empty();
+        ItemDb itemDb = new ItemDb();
+        itemDb.setId(itemId);
+        itemDb.setName(itemIdToName.get(itemId));
+        itemDb.setSellValues(
+                Arrays.stream(objects)
+                        .map(list -> {
+                            String time = (String) list.get(0);
+                            Integer value = (Integer) list.get(1);
+                            return new Price(value / 100.0, LocalDateTime.parse(time, dtf));
+                        }).collect(Collectors.toList())
+        );
+        itemDb.setTimeRecord(LocalDateTime.now());
+        return itemDb;
     }
 
     public static void main(String[] args) {

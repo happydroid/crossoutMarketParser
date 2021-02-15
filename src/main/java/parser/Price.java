@@ -14,12 +14,27 @@ public class Price {
     @JsonProperty("time")
     public LocalDateTime time;
 
-
     public Price() {
     }
 
     public Price(Double value, LocalDateTime time) {
         this.value = value;
+        this.time = time;
+    }
+
+    public Double getValue() {
+        return value;
+    }
+
+    public void setValue(Double value) {
+        this.value = value;
+    }
+
+    public LocalDateTime getTime() {
+        return time;
+    }
+
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 }
