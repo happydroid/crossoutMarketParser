@@ -19,10 +19,10 @@ public class Item {
     public Integer buyOrders;
 
     @JsonProperty("formatSellPrice")
-    public Float formatSellPrice;
+    public Double formatSellPrice;
 
     @JsonProperty("formatBuyPrice")
-    public Float formatBuyPrice;
+    public Double formatBuyPrice;
 
     @JsonProperty("rarityName")
     public String rarityName;
@@ -31,19 +31,19 @@ public class Item {
     public String categoryName;
 
     @JsonProperty("formatCraftingMargin")
-    public Float formatCraftingMargin;
+    public Double formatCraftingMargin;
 
     @JsonProperty("formatCraftingBuySum")
-    public Float formatCraftingBuySum;
+    public Double formatCraftingBuySum;
 
     @JsonProperty("recipeId")
     public Integer recipeId;
 
-    public Float buySellRatio;
+    public Double buySellRatio;
 
-    public Float speedBuySellRatio;
+    public Double speedBuySellRatio;
 
-    public Float craftRatio;
+    public Double craftRatio;
 
     public Integer getId() {
         return id;
@@ -61,11 +61,11 @@ public class Item {
         return buyOrders;
     }
 
-    public Float getFormatSellPrice() {
+    public Double getFormatSellPrice() {
         return formatSellPrice;
     }
 
-    public Float getFormatBuyPrice() {
+    public Double getFormatBuyPrice() {
         return formatBuyPrice;
     }
 
@@ -77,11 +77,11 @@ public class Item {
         return categoryName;
     }
 
-    public Float getFormatCraftingMargin() {
+    public Double getFormatCraftingMargin() {
         return formatCraftingMargin;
     }
 
-    public Float getFormatCraftingBuySum() {
+    public Double getFormatCraftingBuySum() {
         return formatCraftingBuySum;
     }
 
@@ -89,15 +89,15 @@ public class Item {
         return recipeId;
     }
 
-    public Float getBuySellRatio() {
+    public Double getBuySellRatio() {
         return buySellRatio;
     }
 
-    public Float getSpeedBuySellRatio() {
+    public Double getSpeedBuySellRatio() {
         return speedBuySellRatio;
     }
 
-    public Float getCraftRatio() {
+    public Double getCraftRatio() {
         return craftRatio;
     }
 }

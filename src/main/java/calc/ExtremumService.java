@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
+import parser.Item;
 import parser.Price;
 import parser.SkipSslVerificationHttpRequestFactory;
 
@@ -23,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 @Configuration
@@ -85,30 +87,62 @@ public class ExtremumService {
         LocalDateTime now = LocalDateTime.now();
         List<ItemDb> itemDbs = new ArrayList<>();
         for (ItemDb itemDb : itemLoader.getAll().find()) {
-            if (itemDb.getTimeRecord().plusDays(2).isAfter(now)) {
+            if (itemDb.getTimeRecord().plusDays(6).isAfter(now)) {
                 itemDbs.add(itemDb);
+            }
+        }
+
+        //inject values from fast source
+        Map<Integer, Item> itemFromFastSource = craftService.fastParseAllItems().stream().collect(Collectors.toMap(Item::getId, item -> item));
+        for (ItemDb itemDb : itemDbs) {
+            if (itemFromFastSource.containsKey(itemDb.id)) {
+
+                if (itemFromFastSource.get(itemDb.id).getFormatSellPrice() == null) {
+                    int i = 0;
+                }
+                itemDb.getSellValues().get(0).setValue(itemFromFastSource.get(itemDb.id).getFormatSellPrice());
+
             }
         }
         return itemDbs;
     }
 
     private void calcRatioAndPrint(List<ItemDb> itemDbs) {
+        calcRatioMin(itemDbs);
+        calcRatioMax(itemDbs);
+    }
+
+    private void calcRatioMin(List<ItemDb> itemDbs) {
         Map<Double, String> ratioToName = new HashMap<>();
         for (ItemDb itemDb : itemDbs) {
             Median median = new Median();
             List<Double> doubles = itemDb.getSellValues().stream().map(Price::getValue).collect(Collectors.toList());
 
-            double valueMax = median.evaluate(doubles.stream().mapToDouble(i -> i).toArray(), 95);
-            double valueNow = (doubles.get(0)
-                    + doubles.get(1)
-                    + doubles.get(2)
-                    + doubles.get(3)
-                    + doubles.get(4)) / 5.0;
+            double valueMax = median.evaluate(doubles.stream().mapToDouble(i -> i).toArray(), 10);
+            double valueNow = doubles.get(0);
+            if (valueMax > valueNow) {
+                ratioToName.put(valueNow / valueMax, itemDb.getName());
+            }
+        }
+        Stream<Map.Entry<Double, String>> sorted = ratioToName.entrySet().stream().sorted(Map.Entry.comparingByKey());
+        System.out.println("Min items:");
+        sorted.forEach(pair -> System.out.println(pair.getKey() + " " + pair.getValue()));
+    }
+
+    private void calcRatioMax(List<ItemDb> itemDbs) {
+        Map<Double, String> ratioToName = new HashMap<>();
+        for (ItemDb itemDb : itemDbs) {
+            Median median = new Median();
+            List<Double> doubles = itemDb.getSellValues().stream().map(Price::getValue).collect(Collectors.toList());
+
+            double valueMax = median.evaluate(doubles.stream().mapToDouble(i -> i).toArray(), 90);
+            double valueNow = doubles.get(0);
             if (valueMax < valueNow) {
                 ratioToName.put(valueNow / valueMax, itemDb.getName());
             }
         }
         Stream<Map.Entry<Double, String>> sorted = ratioToName.entrySet().stream().sorted(Map.Entry.comparingByKey());
+        System.out.println("Max items:");
         sorted.forEach(pair -> System.out.println(pair.getKey() + " " + pair.getValue()));
     }
 

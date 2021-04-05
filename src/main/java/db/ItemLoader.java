@@ -2,6 +2,10 @@ package db;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -22,7 +26,10 @@ public class ItemLoader {
 
     public void write(ItemDb itemDb) {
         try {
-            getAll().insertOne(itemDb);
+            Bson filter = Filters.eq("_id", itemDb.id);
+            Bson update = new Document("$set", itemDb);
+            UpdateOptions options = new UpdateOptions().upsert(true);
+            getAll().updateOne(filter, update, options);
         } catch (Throwable e) {
             e.printStackTrace();
         }

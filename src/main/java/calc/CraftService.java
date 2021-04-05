@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 @Configuration
 @EnableScheduling
 public class CraftService {
-
     private List<Item> itemList = new ArrayList<>();
     private Map<Integer, ArrayDeque<Item>> integerQueueMap = new HashMap<>();
 
@@ -27,7 +26,7 @@ public class CraftService {
             Item last = integerQueueMap.get(integer).getLast();
             Item first = integerQueueMap.get(integer).getFirst();
             if (last == first) {
-                last.speedBuySellRatio = 0f;
+                last.speedBuySellRatio = 0.0;
                 continue;
             }
             last.speedBuySellRatio = last.buySellRatio - first.buySellRatio;
@@ -96,11 +95,11 @@ public class CraftService {
     }
 
     public Map<Integer, String> getAllIdAndNames() {
-        List<Item> itemList = parseFromSite();
+        List<Item> itemList = fastParseAllItems();
         return itemList.stream().collect(Collectors.toMap(Item::getId, Item::getName));
     }
 
-    private List<Item> parseFromSite() {
+    public List<Item> fastParseAllItems() {
         final String uri = "https://crossoutdb.com/api/v1/items";
 
         SkipSslVerificationHttpRequestFactory httpRequestFactory = new SkipSslVerificationHttpRequestFactory();
