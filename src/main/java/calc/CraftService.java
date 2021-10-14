@@ -1,14 +1,10 @@
 package calc;
 
-import main.RarityEnum;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
-import parser.Item;
-import parser.ItemParser;
-import parser.SkipSslVerificationHttpRequestFactory;
+import parser.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,31 +12,33 @@ import java.util.stream.Collectors;
 @Configuration
 @EnableScheduling
 public class CraftService {
+    public static final String URI_ITEMS = "https://crossoutdb.com/api/v1/items";
+
     private List<Item> itemList = new ArrayList<>();
-    private Map<Integer, ArrayDeque<Item>> integerQueueMap = new HashMap<>();
+    private Map<Integer, ArrayDeque<Item>> itemIdToItemMap = new HashMap<>();
 
     public void readSomeData() {
-        itemList = Calculation.calculation(itemList);
+        itemList = Calculation.calculation(fastParseAllItems());
         fillMapWithTime(itemList);
-        for (Integer integer : integerQueueMap.keySet()) {
-            Item last = integerQueueMap.get(integer).getLast();
-            Item first = integerQueueMap.get(integer).getFirst();
+        for (Integer integer : itemIdToItemMap.keySet()) {
+            Item last = itemIdToItemMap.get(integer).getLast();
+            Item first = itemIdToItemMap.get(integer).getFirst();
             if (last == first) {
-                last.speedBuySellRatio = 0.0;
+                last.setSpeedBuySellRatio(0.0);
                 continue;
             }
-            last.speedBuySellRatio = last.buySellRatio - first.buySellRatio;
+            last.setSpeedBuySellRatio(last.getBuySellRatio() - first.getBuySellRatio());
         }
     }
 
     private void fillMapWithTime(List<Item> itemList) {
         for (Item item : itemList) {
-            if (!integerQueueMap.containsKey(item.id)) {
-                integerQueueMap.put(item.id, new ArrayDeque<>());
+            if (!itemIdToItemMap.containsKey(item.getId())) {
+                itemIdToItemMap.put(item.getId(), new ArrayDeque<>());
             }
-            integerQueueMap.get(item.id).add(item);
-            if (integerQueueMap.get(item.id).size() > 10) {
-                integerQueueMap.get(item.id).pollFirst();
+            itemIdToItemMap.get(item.getId()).add(item);
+            if (itemIdToItemMap.get(item.getId()).size() > 10) {
+                itemIdToItemMap.get(item.getId()).pollFirst();
             }
         }
     }
@@ -49,10 +47,10 @@ public class CraftService {
         System.out.println();
         System.out.println("Static buy/sell buySellRatio:");
         for (Item item : itemList) {
-            if (item.buySellRatio < 2) {
+            if (item.getBuySellRatio() < 2) {
                 break;
             }
-            System.out.println(item.name + " " + item.buySellRatio + " " + item.rarityName + " " + item.categoryName);
+            System.out.println(item.getName() + " " + item.getBuySellRatio() + " " + item.getRarityName() + " " + item.getCategoryName());
         }
         System.out.println();
         System.out.println();
@@ -60,10 +58,10 @@ public class CraftService {
         System.out.println("Static good craft cost");
         itemList.sort(Comparator.comparing(Item::getCraftRatio).reversed());
         for (Item item : itemList) {
-            if (item.craftRatio < 0.2) {
+            if (item.getCraftRatio() < 0.2) {
                 continue;
             }
-            System.out.println(item.name + " " + item.craftRatio + " " + item.rarityName + " " + item.categoryName);
+            System.out.println(item.getName() + " " + item.getCraftRatio() + " " + item.getRarityName() + " " + item.getCategoryName());
         }
 
         System.out.println();
@@ -71,17 +69,15 @@ public class CraftService {
         System.out.println("Speed good craft cost:");
         itemList.sort(Comparator.comparing(Item::getSpeedBuySellRatio).reversed());
         for (Item item : itemList) {
-            if (item.buySellRatio < 1 || item.speedBuySellRatio < 0.1) {
+            if (item.getBuySellRatio() < 1 || item.getSpeedBuySellRatio() < 0.1) {
                 continue;
             }
-            System.out.println(item.name + " " + item.buySellRatio + " " + item.speedBuySellRatio + " " + item.rarityName
-                    + " " + item.categoryName);
+            System.out.println(item.getName() + " " + item.getBuySellRatio() + " " + item.getSpeedBuySellRatio() + " "
+                    + item.getRarityName() + " " + item.getCategoryName());
         }
         System.out.println();
-
         System.out.println();
     }
-
 
     @Scheduled(fixedRate = 2 * 60 * 1000)
     public void makeIteration() {
@@ -100,28 +96,22 @@ public class CraftService {
     }
 
     public List<Item> fastParseAllItems() {
-        final String uri = "https://crossoutdb.com/api/v1/items";
-
         SkipSslVerificationHttpRequestFactory httpRequestFactory = new SkipSslVerificationHttpRequestFactory();
         RestTemplate restTemplate = new RestTemplate(httpRequestFactory);
-        String result = restTemplate.getForObject(uri, String.class);
+        String result = restTemplate.getForObject(URI_ITEMS, String.class);
 
         List<Item> itemList = Arrays.asList(ItemParser.parseItem(result));
         return itemList.stream()
-                .filter(a -> a.buyOrders != 0)
-                .filter(a -> RarityEnum.Rare.toString().equals(a.rarityName)
-                        || RarityEnum.Epic.toString().equals(a.rarityName)
-                        || RarityEnum.Special.toString().equals(a.rarityName)
-                        || RarityEnum.Legendary.toString().equals(a.rarityName)
+                .filter(a -> a.getBuyOrders() != 0)
+                .filter(a -> RarityEnum.Rare.toString().equals(a.getRarityName())
+                        || RarityEnum.Epic.toString().equals(a.getRarityName())
+                        || RarityEnum.Special.toString().equals(a.getRarityName())
+                        || RarityEnum.Legendary.toString().equals(a.getRarityName())
                 )
-                .filter(a -> CategoryEnum.Weapons.toString().equals(a.categoryName)
-                        || CategoryEnum.Cabins.toString().equals(a.categoryName)
-                        || CategoryEnum.Hardware.toString().equals(a.categoryName)
-                        || CategoryEnum.Movement.toString().equals(a.categoryName)
+                .filter(a -> CategoryEnum.Weapons.toString().equals(a.getRarityName())
+                        || CategoryEnum.Cabins.toString().equals(a.getRarityName())
+                        || CategoryEnum.Hardware.toString().equals(a.getRarityName())
+                        || CategoryEnum.Movement.toString().equals(a.getRarityName())
                 ).collect(Collectors.toList());
-    }
-
-    public static void main(String[] args) {
-        new AnnotationConfigApplicationContext(CraftService.class);
     }
 }

@@ -1,11 +1,10 @@
 package calc;
 
 import db.ItemDb;
-import db.ItemLoader;
+import db.ItemsLoader;
 import db.MongoConfig;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.ResponseEntity;
@@ -20,26 +19,24 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 @Configuration
 @EnableScheduling
 @Import({MongoConfig.class})
 public class ExtremumService {
+    private static final String URL = "https://crossoutdb.com/api/v1/market/sellprice/";
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
     private static final Random random = new Random();
 
     private CraftService craftService = new CraftService();
-    private List<ItemDb> allItems = new CopyOnWriteArrayList<>();
     private Map<Integer, String> idToNameAllItems;
 
     @Autowired
-    private ItemLoader itemLoader;
+    private ItemsLoader itemLoader;
 
     @Scheduled(fixedRate = 1000000000)
     public void complexLoadMain() {
@@ -70,10 +67,7 @@ public class ExtremumService {
         ExecutorService exec = Executors.newFixedThreadPool(2);
         List<Runnable> tasks = new ArrayList<>();
         for (Integer itemId : idList) {
-            tasks.add(() -> {
-                ItemDb itemDb = parseFromSite(itemId);
-                itemLoader.write(itemDb);
-            });
+            tasks.add(() -> itemLoader.write(parseFromSite(itemId)));
         }
 
         CompletableFuture<?>[] futures = tasks.stream()
@@ -96,12 +90,7 @@ public class ExtremumService {
         Map<Integer, Item> itemFromFastSource = craftService.fastParseAllItems().stream().collect(Collectors.toMap(Item::getId, item -> item));
         for (ItemDb itemDb : itemDbs) {
             if (itemFromFastSource.containsKey(itemDb.id)) {
-
-                if (itemFromFastSource.get(itemDb.id).getFormatSellPrice() == null) {
-                    int i = 0;
-                }
                 itemDb.getSellValues().get(0).setValue(itemFromFastSource.get(itemDb.id).getFormatSellPrice());
-
             }
         }
         return itemDbs;
@@ -152,7 +141,7 @@ public class ExtremumService {
         } catch (Exception e) {
 
         }
-        final String uri = "https://crossoutdb.com/api/v1/market/sellprice/" + itemId;
+        final String uri = URL + itemId;
         SkipSslVerificationHttpRequestFactory httpRequestFactory = new SkipSslVerificationHttpRequestFactory();
         httpRequestFactory.setConnectTimeout(5000);
         httpRequestFactory.setReadTimeout(30000);
@@ -167,7 +156,6 @@ public class ExtremumService {
                 return parseFromSite(itemId);
             }
         } catch (Exception e) {
-            //e.printStackTrace();
             System.err.println("Try load data again for id = " + itemId);
             return parseFromSite(itemId);
         }
@@ -185,9 +173,5 @@ public class ExtremumService {
         );
         itemDb.setTimeRecord(LocalDateTime.now());
         return itemDb;
-    }
-
-    public static void main(String[] args) {
-        new AnnotationConfigApplicationContext(ExtremumService.class);
     }
 }

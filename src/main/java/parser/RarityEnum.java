@@ -1,4 +1,4 @@
-package main;
+package parser;
 
 public enum RarityEnum {
     Common("Common"),

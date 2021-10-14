@@ -26,23 +26,30 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile("org.springframework.boot:spring-boot-starter-web")
-    compile('org.apache.httpcomponents:httpclient:4.5.8')
-    compile 'org.apache.commons:commons-math3:3.0'
+    compile('org.springframework.boot:spring-boot-starter-web:2.5.5')
+    compile('org.apache.httpcomponents:httpclient:4.5.13')
+    compile 'org.apache.commons:commons-math3:3.6.1'
 
-    testCompile('org.springframework.boot:spring-boot-starter-test')
-    testCompile('com.jayway.jsonpath:json-path')
+    testCompile('org.springframework.boot:spring-boot-starter-test:2.5.5')
+    testCompile('com.jayway.jsonpath:json-path:2.6.0')
 
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.9.8'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.9.8'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.8'
 
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    runtimeOnly 'mysql:mysql-connector-java'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.5.5'
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.5.5'
+    runtimeOnly 'mysql:mysql-connector-java:8.0.25'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:2.5.5'
 
     compile group: 'org.mongodb', name: 'mongo-java-driver'
     compile group: 'org.springframework.data', name: 'spring-data-mongodb'
     //compile group: 'org.springframework.data', name: 'spring-data-commons', version: '2.4.3'
+
+    compileOnly 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.22'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.22'
+
 }

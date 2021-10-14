@@ -2,102 +2,49 @@ package parser;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Data
 public class Item {
 
     @JsonProperty("id")
-    public Integer id;
+    private Integer id;
 
     @JsonProperty("name")
-    public String name;
+    private String name;
 
     @JsonProperty("sellOffers")
-    public Integer sellOffers;
+    private Integer sellOffers;
 
     @JsonProperty("buyOrders")
-    public Integer buyOrders;
+    private Integer buyOrders;
 
     @JsonProperty("formatSellPrice")
-    public Double formatSellPrice;
+    private Double formatSellPrice;
 
     @JsonProperty("formatBuyPrice")
-    public Double formatBuyPrice;
+    private Double formatBuyPrice;
 
     @JsonProperty("rarityName")
-    public String rarityName;
+    private String rarityName;
 
     @JsonProperty("categoryName")
-    public String categoryName;
+    private String categoryName;
 
     @JsonProperty("formatCraftingMargin")
-    public Double formatCraftingMargin;
+    private Double formatCraftingMargin;
 
     @JsonProperty("formatCraftingBuySum")
-    public Double formatCraftingBuySum;
+    private Double formatCraftingBuySum;
 
     @JsonProperty("recipeId")
-    public Integer recipeId;
+    private Integer recipeId;
 
-    public Double buySellRatio;
+    private Double buySellRatio;
 
-    public Double speedBuySellRatio;
+    private Double speedBuySellRatio;
 
-    public Double craftRatio;
+    private Double craftRatio;
 
-    public Integer getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Integer getSellOffers() {
-        return sellOffers;
-    }
-
-    public Integer getBuyOrders() {
-        return buyOrders;
-    }
-
-    public Double getFormatSellPrice() {
-        return formatSellPrice;
-    }
-
-    public Double getFormatBuyPrice() {
-        return formatBuyPrice;
-    }
-
-    public String getRarityName() {
-        return rarityName;
-    }
-
-    public String getCategoryName() {
-        return categoryName;
-    }
-
-    public Double getFormatCraftingMargin() {
-        return formatCraftingMargin;
-    }
-
-    public Double getFormatCraftingBuySum() {
-        return formatCraftingBuySum;
-    }
-
-    public Integer getRecipeId() {
-        return recipeId;
-    }
-
-    public Double getBuySellRatio() {
-        return buySellRatio;
-    }
-
-    public Double getSpeedBuySellRatio() {
-        return speedBuySellRatio;
-    }
-
-    public Double getCraftRatio() {
-        return craftRatio;
-    }
 }

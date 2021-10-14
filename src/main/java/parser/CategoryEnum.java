@@ -1,4 +1,4 @@
-package calc;
+package parser;
 
 public enum CategoryEnum {
     Weapons("Weapons"),

@@ -10,18 +10,18 @@ public class Calculation {
     public static List<Item> calculation(List<Item> itemList) {
         for (Item item : itemList) {
             try {
-                item.buySellRatio = item.buyOrders * 1.0 / item.sellOffers;
+                item.setBuySellRatio(item.getBuyOrders() * 1.0 / item.getSellOffers());
             } catch (Exception e) {
-                item.buySellRatio = 0.0;
+                item.setBuySellRatio(0.0);
             }
             try {
-                if (item.recipeId == 0) {
-                    item.craftRatio = 0.0;
+                if (item.getRecipeId() == 0) {
+                    item.setCraftRatio(0.0);
                 } else {
-                    item.craftRatio = item.formatCraftingMargin * 1f / item.formatBuyPrice;
+                    item.setCraftRatio(item.getFormatCraftingMargin() * 1f / item.getFormatBuyPrice());
                 }
             } catch (Exception e) {
-                item.craftRatio = 0.0;
+                item.setCraftRatio(0.0);
             }
         }
         itemList.sort(Comparator.comparing(Item::getBuySellRatio).reversed());

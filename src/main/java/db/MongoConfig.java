@@ -32,7 +32,7 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
 
     @Override
     protected String getDatabaseName() {
-        return "crossoutbigdata";
+        return "crossoutdb";
     }
 
     @Bean
@@ -41,8 +41,8 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     }
 
     @Bean
-    public ItemLoader itemLoader() {
-        return new ItemLoader();
+    public ItemsLoader itemsLoader() {
+        return new ItemsLoader();
     }
 
 }

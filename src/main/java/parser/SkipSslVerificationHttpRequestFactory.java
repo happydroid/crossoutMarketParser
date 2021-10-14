@@ -41,16 +41,13 @@ public class SkipSslVerificationHttpRequestFactory extends SimpleClientHttpReque
     }
 
     private class SkipHostnameVerifier implements HostnameVerifier {
-
         @Override
         public boolean verify(String s, SSLSession sslSession) {
             return true;
         }
-
     }
 
     private static class SkipX509TrustManager implements X509TrustManager {
-
         @Override
         public X509Certificate[] getAcceptedIssuers() {
             return new X509Certificate[0];
@@ -63,7 +60,5 @@ public class SkipSslVerificationHttpRequestFactory extends SimpleClientHttpReque
         @Override
         public void checkServerTrusted(X509Certificate[] chain, String authType) {
         }
-
     }
-
 }
